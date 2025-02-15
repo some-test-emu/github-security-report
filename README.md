@@ -85,17 +85,6 @@ npm start
   - Code Scanning alerts
   - Secret Scanning alerts
   - Dependabot alerts
-- Optional detailed alert information in the PDF
-- Responsive web interface
-- Secure token handling (tokens are never stored)
-
-## Development
-
-### Local Development with Hot Reloading
-```bash
-npm install
-npm start
-```
 
 ## Troubleshooting
 
