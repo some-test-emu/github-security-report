@@ -97,15 +97,6 @@ npm install
 npm start
 ```
 
-### Development with Docker
-```bash
-# Build development image
-docker build -f Dockerfile.dev -t github-security-report-dev .
-
-# Run with hot-reloading
-docker run -p 3000:3000 -v $(pwd):/app -v /app/node_modules github-security-report-dev
-```
-
 ## Troubleshooting
 
 1. If you see permission errors:
