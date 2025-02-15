@@ -5,6 +5,7 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
 } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
@@ -25,30 +26,74 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 10,
   },
-  subsectionTitle: {
-    fontSize: 14,
-    marginTop: 10,
-    marginBottom: 5,
+  table: {
+    width: 'auto',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    marginBottom: 10,
   },
-  summaryItem: {
-    marginBottom: 5,
+  tableRow: {
+    margin: 'auto',
+    flexDirection: 'row',
+  },
+  tableHeader: {
+    backgroundColor: '#f6f6f6',
+  },
+  tableCell: {
+    width: '33%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    padding: 5,
+  },
+  tableCellHeader: {
+    width: '33%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    padding: 5,
+    backgroundColor: '#f6f6f6',
+    fontWeight: 'bold',
+  },
+  tableCellHalf: {
+    width: '50%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    padding: 5,
+  },
+  tableCellHeaderHalf: {
+    width: '50%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    padding: 5,
+    backgroundColor: '#f6f6f6',
+    fontWeight: 'bold',
+  },
+  chartContainer: {
+    marginTop: 10,
+    marginBottom: 10,
+    width: '100%',
+    height: 200,
+  },
+  chart: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
   },
   alertItem: {
     marginBottom: 10,
     padding: 5,
-    borderBottom: '1 solid #ccc',
-  },
-  severityHigh: {
-    color: '#d32f2f',
-  },
-  severityCritical: {
-    color: '#7a0000',
-  },
-  severityMedium: {
-    color: '#ed6c02',
-  },
-  severityLow: {
-    color: '#2e7d32',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
 });
 
@@ -60,7 +105,20 @@ const formatDate = (dateString) => {
   });
 };
 
-const SecurityReport = ({ organization, alerts, summary, showAllAlerts }) => (
+const TableRow = ({ items, isHeader = false, twoColumns = false }) => (
+  <View style={styles.tableRow}>
+    {items.map((item, i) => (
+      <Text key={i} style={isHeader ? 
+        (twoColumns ? styles.tableCellHeaderHalf : styles.tableCellHeader) :
+        (twoColumns ? styles.tableCellHalf : styles.tableCell)
+      }>
+        {item}
+      </Text>
+    ))}
+  </View>
+);
+
+const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartImages }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <Text style={styles.header}>
@@ -70,27 +128,41 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts }) => (
       {/* Executive Summary */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Executive Summary</Text>
-        <Text style={styles.summaryItem}>
-          Total Code Scanning Alerts: {summary.codeScanning.total} (Open: {summary.codeScanning.open})
-        </Text>
-        <Text style={styles.summaryItem}>
-          Total Secret Scanning Alerts: {summary.secretScanning.total} (Open: {summary.secretScanning.open})
-        </Text>
-        <Text style={styles.summaryItem}>
-          Total Dependabot Alerts: {summary.dependabot.total} (Open: {summary.dependabot.open})
-        </Text>
+        <View style={styles.table}>
+          <TableRow items={['Alert Type', 'Total', 'Open']} isHeader={true} />
+          <TableRow items={[
+            'Code Scanning',
+            summary.codeScanning.total.toString(),
+            summary.codeScanning.open.toString()
+          ]} />
+          <TableRow items={[
+            'Secret Scanning',
+            summary.secretScanning.total.toString(),
+            summary.secretScanning.open.toString()
+          ]} />
+          <TableRow items={[
+            'Dependabot',
+            summary.dependabot.total.toString(),
+            summary.dependabot.open.toString()
+          ]} />
+        </View>
       </View>
 
       {/* Code Scanning Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Code Scanning Alerts</Text>
-        <Text style={styles.summaryItem}>
-          Severity Breakdown:
-          {'\n'}Critical: {summary.codeScanning.severity.critical}
-          {'\n'}High: {summary.codeScanning.severity.high}
-          {'\n'}Medium: {summary.codeScanning.severity.medium}
-          {'\n'}Low: {summary.codeScanning.severity.low}
-        </Text>
+        {chartImages?.codeScanning && (
+          <View style={styles.chartContainer}>
+            <Image style={styles.chart} src={chartImages.codeScanning} />
+          </View>
+        )}
+        <View style={styles.table}>
+          <TableRow items={['Severity', 'Count']} isHeader={true} twoColumns={true} />
+          <TableRow items={['Critical', summary.codeScanning.severity.critical.toString()]} twoColumns={true} />
+          <TableRow items={['High', summary.codeScanning.severity.high.toString()]} twoColumns={true} />
+          <TableRow items={['Medium', summary.codeScanning.severity.medium.toString()]} twoColumns={true} />
+          <TableRow items={['Low', summary.codeScanning.severity.low.toString()]} twoColumns={true} />
+        </View>
 
         {showAllAlerts && alerts.codeScanning.map((alert, index) => (
           <View key={index} style={styles.alertItem}>
@@ -106,12 +178,12 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts }) => (
       {/* Secret Scanning Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Secret Scanning Alerts</Text>
-        <Text style={styles.summaryItem}>
-          Secret Types:
-          {Object.entries(summary.secretScanning.types).map(([type, count]) => (
-            `\n${type}: ${count}`
+        <View style={styles.table}>
+          <TableRow items={['Secret Type', 'Count']} isHeader={true} twoColumns={true} />
+          {Object.entries(summary.secretScanning.types).map(([type, count], index) => (
+            <TableRow key={index} items={[type, count.toString()]} twoColumns={true} />
           ))}
-        </Text>
+        </View>
 
         {showAllAlerts && alerts.secretScanning.map((alert, index) => (
           <View key={index} style={styles.alertItem}>
@@ -126,13 +198,18 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts }) => (
       {/* Dependabot Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Dependabot Alerts</Text>
-        <Text style={styles.summaryItem}>
-          Severity Breakdown:
-          {'\n'}Critical: {summary.dependabot.severity.critical}
-          {'\n'}High: {summary.dependabot.severity.high}
-          {'\n'}Medium: {summary.dependabot.severity.medium}
-          {'\n'}Low: {summary.dependabot.severity.low}
-        </Text>
+        {chartImages?.dependabot && (
+          <View style={styles.chartContainer}>
+            <Image style={styles.chart} src={chartImages.dependabot} />
+          </View>
+        )}
+        <View style={styles.table}>
+          <TableRow items={['Severity', 'Count']} isHeader={true} twoColumns={true} />
+          <TableRow items={['Critical', summary.dependabot.severity.critical.toString()]} twoColumns={true} />
+          <TableRow items={['High', summary.dependabot.severity.high.toString()]} twoColumns={true} />
+          <TableRow items={['Medium', summary.dependabot.severity.medium.toString()]} twoColumns={true} />
+          <TableRow items={['Low', summary.dependabot.severity.low.toString()]} twoColumns={true} />
+        </View>
 
         {showAllAlerts && alerts.dependabot.map((alert, index) => (
           <View key={index} style={styles.alertItem}>

@@ -1,19 +1,17 @@
-import axios from 'axios';
-
-const BASE_URL = 'https://api.github.com';
+import { Octokit } from '@octokit/rest';
 
 export const createGitHubClient = (token) => {
-  return axios.create({
-    baseURL: BASE_URL,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
+  return new Octokit({
+    auth: token,
+    previews: [
+      'dorian-preview',     // Required for security alerts APIs
+      'machine-man-preview' // Required for some organization APIs
+    ]
   });
 };
 
 export const fetchSecurityAlerts = async (token, organization) => {
-  const client = createGitHubClient(token);
+  const octokit = createGitHubClient(token);
   
   try {
     const alerts = {
@@ -22,33 +20,57 @@ export const fetchSecurityAlerts = async (token, organization) => {
       dependabot: [],
     };
 
-    // Fetch all alerts using organization-level endpoints
+    // Fetch all code scanning alerts with pagination
     try {
-      // Code scanning alerts
-      const codeScanningResponse = await client.get(
-        `/orgs/${organization}/code-scanning/alerts`
+      const codeScanningAlerts = await octokit.paginate(
+        'GET /orgs/{org}/code-scanning/alerts',
+        {
+          org: organization,
+          per_page: 100,
+          state: 'all'
+        }
       );
-      alerts.codeScanning = codeScanningResponse.data;
+      alerts.codeScanning = codeScanningAlerts;
     } catch (error) {
       console.warn('Error fetching code scanning alerts:', error.message);
     }
 
+    // Fetch all secret scanning alerts with pagination (both open and resolved)
     try {
-      // Secret scanning alerts
-      const secretScanningResponse = await client.get(
-        `/orgs/${organization}/secret-scanning/alerts`
+      const openAlerts = await octokit.paginate(
+        'GET /orgs/{org}/secret-scanning/alerts',
+        {
+          org: organization,
+          per_page: 100,
+          state: 'open'
+        }
       );
-      alerts.secretScanning = secretScanningResponse.data;
+      
+      const resolvedAlerts = await octokit.paginate(
+        'GET /orgs/{org}/secret-scanning/alerts',
+        {
+          org: organization,
+          per_page: 100,
+          state: 'resolved'
+        }
+      );
+      
+      alerts.secretScanning = [...openAlerts, ...resolvedAlerts];
     } catch (error) {
       console.warn('Error fetching secret scanning alerts:', error.message);
     }
 
+    // Fetch all dependabot alerts with pagination
     try {
-      // Dependabot alerts
-      const dependabotResponse = await client.get(
-        `/orgs/${organization}/dependabot/alerts`
+      const dependabotAlerts = await octokit.paginate(
+        'GET /orgs/{org}/dependabot/alerts',
+        {
+          org: organization,
+          per_page: 100,
+          state: 'all'
+        }
       );
-      alerts.dependabot = dependabotResponse.data;
+      alerts.dependabot = dependabotAlerts;
     } catch (error) {
       console.warn('Error fetching dependabot alerts:', error.message);
     }
@@ -65,10 +87,10 @@ export const generateAlertsSummary = (alerts) => {
       total: alerts.codeScanning.length,
       open: alerts.codeScanning.filter(alert => alert.state === 'open').length,
       severity: {
-        critical: alerts.codeScanning.filter(alert => alert.rule?.severity === 'critical').length,
-        high: alerts.codeScanning.filter(alert => alert.rule?.severity === 'high').length,
-        medium: alerts.codeScanning.filter(alert => alert.rule?.severity === 'medium').length,
-        low: alerts.codeScanning.filter(alert => alert.rule?.severity === 'low').length,
+        critical: alerts.codeScanning.filter(alert => alert.rule?.security_severity_level === 'critical').length,
+        high: alerts.codeScanning.filter(alert => alert.rule?.security_severity_level === 'high').length,
+        medium: alerts.codeScanning.filter(alert => alert.rule?.security_severity_level === 'medium').length,
+        low: alerts.codeScanning.filter(alert => alert.rule?.security_severity_level === 'low').length,
       },
     },
     secretScanning: {
