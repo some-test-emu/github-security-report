@@ -48,7 +48,7 @@ docker run -p 3000:80 github-security-report
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/github-advanced-security-org-pdf.git
+git clone https://github.com/chetbackiewicz/github-advanced-security-org-pdf.git
 cd github-advanced-security-org-pdf
 ```
 
