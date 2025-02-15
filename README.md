@@ -28,7 +28,7 @@ To create a Personal Access Token:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/github-advanced-security-org-pdf.git
+git clone https://github.com/chetbackiewicz/github-advanced-security-org-pdf.git
 cd github-advanced-security-org-pdf
 ```
 
