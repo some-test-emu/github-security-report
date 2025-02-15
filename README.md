@@ -28,8 +28,8 @@ To create a Personal Access Token:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/chetbackiewicz/github-advanced-security-org-pdf.git
-cd github-advanced-security-org-pdf
+git clone https://github.com/chetbackiewicz/github-security-report.git
+cd github-security-report
 ```
 
 2. Build the Docker image:
@@ -48,8 +48,8 @@ docker run -p 3000:80 github-security-report
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/chetbackiewicz/github-advanced-security-org-pdf.git
-cd github-advanced-security-org-pdf
+git clone https://github.com/chetbackiewicz/github-security-report.git
+cd github-security-report
 ```
 
 2. Install dependencies:
