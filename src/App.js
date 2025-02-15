@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Box, Container, CssBaseline } from '@mui/material';
 import LoginForm from './components/LoginForm';
-import ReportGenerator from './components/ReportGenerator';
 
 const theme = createTheme({
   palette: {
@@ -17,30 +16,12 @@ const theme = createTheme({
 });
 
 function App() {
-  const [authToken, setAuthToken] = useState('');
-  const [organization, setOrganization] = useState('');
-  const [hasPermissions, setHasPermissions] = useState(false);
-
-  const handleLogin = (token, org) => {
-    setAuthToken(token);
-    setOrganization(org);
-    // In a real app, we would verify permissions here
-    setHasPermissions(true);
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
-          {!hasPermissions ? (
-            <LoginForm onLogin={handleLogin} />
-          ) : (
-            <ReportGenerator 
-              authToken={authToken} 
-              organization={organization}
-            />
-          )}
+          <LoginForm />
         </Box>
       </Container>
     </ThemeProvider>

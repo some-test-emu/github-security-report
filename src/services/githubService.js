@@ -32,10 +32,13 @@ export const fetchSecurityAlerts = async (token, organization) => {
       );
       alerts.codeScanning = codeScanningAlerts;
     } catch (error) {
+      if (error.status >= 400 && error.status < 500) {
+        throw error;
+      }
       console.warn('Error fetching code scanning alerts:', error.message);
     }
 
-    // Fetch all secret scanning alerts with pagination (both open and resolved)
+    // Fetch all secret scanning alerts with pagination
     try {
       const openAlerts = await octokit.paginate(
         'GET /orgs/{org}/secret-scanning/alerts',
@@ -57,6 +60,9 @@ export const fetchSecurityAlerts = async (token, organization) => {
       
       alerts.secretScanning = [...openAlerts, ...resolvedAlerts];
     } catch (error) {
+      if (error.status >= 400 && error.status < 500) {
+        throw error;
+      }
       console.warn('Error fetching secret scanning alerts:', error.message);
     }
 
@@ -72,12 +78,18 @@ export const fetchSecurityAlerts = async (token, organization) => {
       );
       alerts.dependabot = dependabotAlerts;
     } catch (error) {
+      if (error.status >= 400 && error.status < 500) {
+        throw error;
+      }
       console.warn('Error fetching dependabot alerts:', error.message);
     }
 
     return alerts;
   } catch (error) {
-    throw new Error(`Failed to fetch security alerts: ${error.message}`);
+    // Preserve the error status from Octokit
+    console.log("error: ", error);
+    error.response = { status: error.status };
+    throw error;
   }
 };
 

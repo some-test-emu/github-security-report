@@ -6,12 +6,18 @@ import {
   Typography,
   Paper,
   Alert,
+  CircularProgress,
 } from '@mui/material';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { fetchSecurityAlerts, generateAlertsSummary } from '../services/githubService';
+import SecurityReport from './SecurityReport';
 
-const LoginForm = ({ onLogin }) => {
+const LoginForm = () => {
   const [token, setToken] = useState('');
   const [organization, setOrganization] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,12 +27,37 @@ const LoginForm = ({ onLogin }) => {
     }
 
     try {
-      // Here we would typically validate the token and check permissions
-      // For now, we'll just pass the values up
-      onLogin(token, organization);
+      setLoading(true);
+      setError('');
+      const alertsData = await fetchSecurityAlerts(token, organization);
+      const summaryData = generateAlertsSummary(alertsData);
+      setReportData({
+        alerts: alertsData,
+        summary: summaryData,
+        organization,
+      });
     } catch (err) {
-      setError(err.message || 'Failed to authenticate');
+      const status = err.response?.status;
+      if (status >= 400 && status < 500) {
+        setError(`Organization "${organization}" is not accessible with the provided token. Please check your permissions and token settings.`);
+      } else {
+        setError(err.message || 'Failed to fetch security alerts');
+      }
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const generatePDF = () => {
+    return (
+      <SecurityReport
+        organization={reportData.organization}
+        alerts={reportData.alerts}
+        summary={reportData.summary}
+        showAllAlerts={false}
+        chartImages={null}
+      />
+    );
   };
 
   return (
@@ -62,6 +93,7 @@ const LoginForm = ({ onLogin }) => {
           fullWidth
           margin="normal"
           required
+          disabled={loading}
         />
 
         <TextField
@@ -72,18 +104,46 @@ const LoginForm = ({ onLogin }) => {
           fullWidth
           margin="normal"
           required
+          disabled={loading}
           helperText="Token needs security read permissions"
         />
 
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          fullWidth
-          sx={{ mt: 2 }}
-        >
-          Generate Report
-        </Button>
+        {reportData ? (
+          <PDFDownloadLink
+            document={generatePDF()}
+            fileName={`${organization}-security-report.pdf`}
+          >
+            {({ loading: pdfLoading }) => (
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                sx={{ mt: 2 }}
+                disabled={pdfLoading}
+              >
+                {pdfLoading ? 'Generating PDF...' : 'Download PDF Report'}
+              </Button>
+            )}
+          </PDFDownloadLink>
+        ) : (
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            sx={{ mt: 2 }}
+            disabled={loading}
+          >
+            {loading ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CircularProgress size={20} color="inherit" />
+                <span>Generating Report...</span>
+              </Box>
+            ) : (
+              'Download PDF Report'
+            )}
+          </Button>
+        )}
       </Paper>
     </Box>
   );

@@ -186,7 +186,7 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartIma
             summary.secretScanning.open.toString()
           ]} />
           <TableRow items={[
-            'Dependabot',
+            'Software Composition Analysis',
             summary.dependabot.total.toString(),
             summary.dependabot.open.toString()
           ]} />
@@ -240,9 +240,9 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartIma
         ))}
       </View>
 
-      {/* Dependabot Section */}
+      {/* Software Composition Analysis Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Dependabot Alerts</Text>
+        <Text style={styles.sectionTitle}>Software Composition Analysis Alerts</Text>
         {chartImages?.dependabot && (
           <View style={styles.chartContainer}>
             <Image style={styles.chart} src={chartImages.dependabot} />
