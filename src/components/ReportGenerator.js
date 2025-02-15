@@ -5,9 +5,9 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  Button,
   FormControlLabel,
   Checkbox,
-  Button,
 } from '@mui/material';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { fetchSecurityAlerts, generateAlertsSummary } from '../services/githubService';
@@ -125,6 +125,7 @@ const ReportGenerator = ({ authToken, organization }) => {
           </>
         )}
 
+        {/* Temporarily commented out
         <Box sx={{ mt: 3 }}>
           <FormControlLabel
             control={
@@ -136,6 +137,7 @@ const ReportGenerator = ({ authToken, organization }) => {
             label="Include all alert details in PDF"
           />
         </Box>
+        */}
 
         {alerts && chartImages && (
           <Box sx={{ mt: 3 }}>
