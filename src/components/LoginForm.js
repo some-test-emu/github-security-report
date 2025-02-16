@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -11,6 +11,7 @@ import {
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { fetchSecurityAlerts, generateAlertsSummary } from '../services/githubService';
 import SecurityReport from './SecurityReport';
+import SecurityPieChart from './SecurityPieChart';
 
 const LoginForm = () => {
   const [token, setToken] = useState('');
@@ -18,6 +19,9 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
+  const [chartImages, setChartImages] = useState(null);
+  const codeScanningChartRef = useRef(null);
+  const dependabotChartRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,10 +47,28 @@ const LoginForm = () => {
       } else {
         setError(err.message || 'Failed to fetch security alerts');
       }
+      setReportData(null);
+      setChartImages(null);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (reportData?.summary) {
+      setTimeout(() => {
+        const codeScanningImage = codeScanningChartRef.current?.getChartImage();
+        const dependabotImage = dependabotChartRef.current?.getChartImage();
+        
+        if (codeScanningImage && dependabotImage) {
+          setChartImages({
+            codeScanning: codeScanningImage,
+            dependabot: dependabotImage
+          });
+        }
+      }, 2000);
+    }
+  }, [reportData]);
 
   const generatePDF = () => {
     return (
@@ -55,8 +77,68 @@ const LoginForm = () => {
         alerts={reportData.alerts}
         summary={reportData.summary}
         showAllAlerts={false}
-        chartImages={null}
+        chartImages={chartImages}
       />
+    );
+  };
+
+  const renderButton = () => {
+    if (!reportData) {
+      return (
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 2 }}
+          disabled={loading}
+        >
+          {loading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={20} color="inherit" />
+              <span>Retrieving Alerts...</span>
+            </Box>
+          ) : (
+            'Retrieve Security Alerts'
+          )}
+        </Button>
+      );
+    }
+
+    if (reportData && chartImages) {
+      return (
+        <PDFDownloadLink
+          document={generatePDF()}
+          fileName={`${organization}-security-report.pdf`}
+        >
+          {({ loading: pdfLoading }) => (
+            <Button
+              variant="contained"
+              color="success"
+              fullWidth
+              sx={{ mt: 2 }}
+              disabled={pdfLoading}
+            >
+              {pdfLoading ? 'Generating PDF...' : 'Download PDF Report'}
+            </Button>
+          )}
+        </PDFDownloadLink>
+      );
+    }
+
+    return (
+      <Button
+        variant="contained"
+        color="primary"
+        fullWidth
+        sx={{ mt: 2 }}
+        disabled
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={20} color="inherit" />
+          <span>Preparing Report...</span>
+        </Box>
+      </Button>
     );
   };
 
@@ -108,42 +190,33 @@ const LoginForm = () => {
           helperText="Token needs security read permissions"
         />
 
-        {reportData ? (
-          <PDFDownloadLink
-            document={generatePDF()}
-            fileName={`${organization}-security-report.pdf`}
-          >
-            {({ loading: pdfLoading }) => (
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                sx={{ mt: 2 }}
-                disabled={pdfLoading}
-              >
-                {pdfLoading ? 'Generating PDF...' : 'Download PDF Report'}
-              </Button>
-            )}
-          </PDFDownloadLink>
-        ) : (
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{ mt: 2 }}
-            disabled={loading}
-          >
-            {loading ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CircularProgress size={20} color="inherit" />
-                <span>Generating Report...</span>
-              </Box>
-            ) : (
-              'Download PDF Report'
-            )}
-          </Button>
+        {reportData && (
+          <Box sx={{
+            position: 'absolute',
+            width: '500px',
+            height: '300px',
+            overflow: 'hidden',
+            opacity: 0,
+            pointerEvents: 'none',
+          }}>
+            <Box sx={{ width: '100%', height: '100%' }}>
+              <SecurityPieChart
+                ref={codeScanningChartRef}
+                data={reportData.summary.codeScanning.severity}
+                title="Code Scanning Alerts by Severity"
+              />
+            </Box>
+            <Box sx={{ width: '100%', height: '100%' }}>
+              <SecurityPieChart
+                ref={dependabotChartRef}
+                data={reportData.summary.dependabot.severity}
+                title="Software Composition Analysis Alerts by Severity"
+              />
+            </Box>
+          </Box>
         )}
+
+        {renderButton()}
       </Paper>
     </Box>
   );
