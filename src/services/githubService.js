@@ -4,8 +4,8 @@ export const createGitHubClient = (token) => {
   return new Octokit({
     auth: token,
     previews: [
-      'dorian-preview',     // Required for security alerts APIs
-      'machine-man-preview' // Required for some organization APIs
+      'dorian-preview',
+      'machine-man-preview'
     ]
   });
 };
@@ -20,7 +20,6 @@ export const fetchSecurityAlerts = async (token, organization) => {
       dependabot: [],
     };
 
-    // Fetch all code scanning alerts with pagination
     try {
       const codeScanningAlerts = await octokit.paginate(
         'GET /orgs/{org}/code-scanning/alerts',
@@ -38,7 +37,6 @@ export const fetchSecurityAlerts = async (token, organization) => {
       console.warn('Error fetching code scanning alerts:', error.message);
     }
 
-    // Fetch all secret scanning alerts with pagination
     try {
       const openAlerts = await octokit.paginate(
         'GET /orgs/{org}/secret-scanning/alerts',
@@ -66,7 +64,6 @@ export const fetchSecurityAlerts = async (token, organization) => {
       console.warn('Error fetching secret scanning alerts:', error.message);
     }
 
-    // Fetch all dependabot alerts with pagination
     try {
       const dependabotAlerts = await octokit.paginate(
         'GET /orgs/{org}/dependabot/alerts',
@@ -86,7 +83,6 @@ export const fetchSecurityAlerts = async (token, organization) => {
 
     return alerts;
   } catch (error) {
-    // Preserve the error status from Octokit
     console.log("error: ", error);
     error.response = { status: error.status };
     throw error;

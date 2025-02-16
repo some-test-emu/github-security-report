@@ -159,7 +159,6 @@ const ReportGenerator = ({ authToken, organization }) => {
 
   useEffect(() => {
     if (summary) {
-      // Wait for charts to render
       setTimeout(() => {
         setChartImages({
           codeScanning: codeScanningChartRef.current?.getChartImage(),
@@ -232,20 +231,6 @@ const ReportGenerator = ({ authToken, organization }) => {
             </Box>
           </>
         )}
-
-        {/* Temporarily commented out
-        <Box sx={{ mt: 3 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={showAllAlerts}
-                onChange={(e) => setShowAllAlerts(e.target.checked)}
-              />
-            }
-            label="Include all alert details in PDF"
-          />
-        </Box>
-        */}
 
         {alerts && chartImages && (
           <Box sx={{ mt: 3 }}>
