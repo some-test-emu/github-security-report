@@ -90,6 +90,76 @@ export const fetchSecurityAlerts = async (token, organization) => {
 };
 
 export const generateAlertsSummary = (alerts) => {
+  // Initialize repository tracking
+  const repoStats = {
+    codeScanning: {},
+    secretScanning: {},
+    dependabot: {}
+  };
+
+  // Process code scanning alerts by repository
+  alerts.codeScanning.forEach(alert => {
+    const repoName = alert.repository.name;
+    if (!repoStats.codeScanning[repoName]) {
+      repoStats.codeScanning[repoName] = {
+        total: 0,
+        open: 0,
+        severity: {
+          critical: 0,
+          high: 0,
+          medium: 0,
+          low: 0
+        }
+      };
+    }
+    
+    repoStats.codeScanning[repoName].total++;
+    if (alert.state === 'open') repoStats.codeScanning[repoName].open++;
+    if (alert.rule?.security_severity_level) {
+      repoStats.codeScanning[repoName].severity[alert.rule.security_severity_level]++;
+    }
+  });
+
+  // Process secret scanning alerts by repository
+  alerts.secretScanning.forEach(alert => {
+    const repoName = alert.repository.name;
+    if (!repoStats.secretScanning[repoName]) {
+      repoStats.secretScanning[repoName] = {
+        total: 0,
+        open: 0,
+        types: {}
+      };
+    }
+    
+    repoStats.secretScanning[repoName].total++;
+    if (alert.state === 'open') repoStats.secretScanning[repoName].open++;
+    repoStats.secretScanning[repoName].types[alert.secret_type] = 
+      (repoStats.secretScanning[repoName].types[alert.secret_type] || 0) + 1;
+  });
+
+  // Process dependabot alerts by repository
+  alerts.dependabot.forEach(alert => {
+    const repoName = alert.repository.name;
+    if (!repoStats.dependabot[repoName]) {
+      repoStats.dependabot[repoName] = {
+        total: 0,
+        open: 0,
+        severity: {
+          critical: 0,
+          high: 0,
+          medium: 0,
+          low: 0
+        }
+      };
+    }
+    
+    repoStats.dependabot[repoName].total++;
+    if (alert.state === 'open') repoStats.dependabot[repoName].open++;
+    if (alert.security_advisory?.severity) {
+      repoStats.dependabot[repoName].severity[alert.security_advisory.severity]++;
+    }
+  });
+
   return {
     codeScanning: {
       total: alerts.codeScanning.length,
@@ -100,6 +170,7 @@ export const generateAlertsSummary = (alerts) => {
         medium: alerts.codeScanning.filter(alert => alert.rule?.security_severity_level === 'medium').length,
         low: alerts.codeScanning.filter(alert => alert.rule?.security_severity_level === 'low').length,
       },
+      byRepository: repoStats.codeScanning
     },
     secretScanning: {
       total: alerts.secretScanning.length,
@@ -108,6 +179,7 @@ export const generateAlertsSummary = (alerts) => {
         acc[alert.secret_type] = (acc[alert.secret_type] || 0) + 1;
         return acc;
       }, {}),
+      byRepository: repoStats.secretScanning
     },
     dependabot: {
       total: alerts.dependabot.length,
@@ -118,6 +190,7 @@ export const generateAlertsSummary = (alerts) => {
         medium: alerts.dependabot.filter(alert => alert.security_advisory?.severity === 'medium').length,
         low: alerts.dependabot.filter(alert => alert.security_advisory?.severity === 'low').length,
       },
+      byRepository: repoStats.dependabot
     },
   };
 }; 

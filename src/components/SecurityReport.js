@@ -4,138 +4,79 @@ import {
   Page,
   Text,
   View,
-  StyleSheet,
   Image,
   Svg,
   Path,
 } from '@react-pdf/renderer';
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontSize: 12,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logoContainer: {
-    width: 40,
-    height: 40,
-    marginRight: 10,
-  },
-  headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  infoTable: {
-    marginBottom: 20,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    width: 150,
-    fontWeight: 'bold',
-  },
-  infoValue: {
-    flex: 1,
-  },
-  section: {
-    marginTop: 15,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  table: {
-    width: 'auto',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    marginBottom: 10,
-  },
-  tableRow: {
-    margin: 'auto',
-    flexDirection: 'row',
-  },
-  tableHeader: {
-    backgroundColor: '#f6f6f6',
-  },
-  tableCell: {
-    width: '33%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    padding: 5,
-  },
-  tableCellHeader: {
-    width: '33%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    padding: 5,
-    backgroundColor: '#f6f6f6',
-    fontWeight: 'bold',
-  },
-  tableCellHalf: {
-    width: '50%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    padding: 5,
-  },
-  tableCellHeaderHalf: {
-    width: '50%',
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
-    padding: 5,
-    backgroundColor: '#f6f6f6',
-    fontWeight: 'bold',
-  },
-  chartContainer: {
-    marginTop: 10,
-    marginBottom: 10,
-    width: '100%',
-    height: 200,
-  },
-  chart: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'contain',
-  },
-  alertItem: {
-    marginBottom: 10,
-    padding: 5,
-    borderStyle: 'solid',
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-});
+import { styles } from '../styles/reportStyles';
 
 const formatDate = () => {
   const now = new Date();
   return now.toISOString().replace('T', ' ').slice(0, -5) + 'Z';
 };
 
-const TableRow = ({ items, isHeader = false, twoColumns = false }) => (
-  <View style={styles.tableRow}>
-    {items.map((item, i) => (
-      <Text key={i} style={isHeader ? 
-        (twoColumns ? styles.tableCellHeaderHalf : styles.tableCellHeader) :
-        (twoColumns ? styles.tableCellHalf : styles.tableCell)
-      }>
-        {item}
-      </Text>
+const TableRow = ({ items, isHeader = false, twoColumns = false, isRepoTable = false, threeColumns = false }) => {
+  let cellStyle, headerStyle;
+  
+  if (isRepoTable) {
+    if (threeColumns) {
+      cellStyle = styles.repoTableCellThird;
+      headerStyle = styles.repoTableCellHeaderThird;
+    } else {
+      cellStyle = styles.repoTableCell;
+      headerStyle = styles.repoTableCellHeader;
+    }
+  } else if (twoColumns) {
+    cellStyle = styles.tableCellHalf;
+    headerStyle = styles.tableCellHeaderHalf;
+  } else {
+    cellStyle = styles.tableCell;
+    headerStyle = styles.tableCellHeader;
+  }
+
+  return (
+    <View style={styles.tableRow}>
+      {items.map((item, i) => (
+        <Text key={i} style={isHeader ? headerStyle : cellStyle}>
+          {item}
+        </Text>
+      ))}
+    </View>
+  );
+};
+
+const RepoBreakdownTable = ({ data, showSeverity = true }) => (
+  <View style={styles.repoTable}>
+    <TableRow 
+      items={showSeverity ? 
+        ['Repository', 'Total', 'Critical', 'High', 'Medium', 'Low'] :
+        ['Repository', 'Total', 'Open']
+      } 
+      isHeader={true}
+      isRepoTable={true}
+      threeColumns={!showSeverity}
+    />
+    {Object.entries(data).map(([repoName, stats]) => (
+      <TableRow 
+        key={repoName} 
+        items={showSeverity ?
+          [
+            repoName,
+            stats.total.toString(),
+            stats.severity.critical.toString(),
+            stats.severity.high.toString(),
+            stats.severity.medium.toString(),
+            stats.severity.low.toString()
+          ] :
+          [
+            repoName,
+            stats.total.toString(),
+            stats.open.toString()
+          ]
+        }
+        isRepoTable={true}
+        threeColumns={!showSeverity}
+      />
     ))}
   </View>
 );
@@ -193,7 +134,7 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartIma
         </View>
       </View>
 
-      {/* Code Scanning Section */}
+      {/* Code Scanning Section - Part 1 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Code Scanning Alerts</Text>
         {chartImages?.codeScanning && (
@@ -208,6 +149,15 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartIma
           <TableRow items={['Medium', summary.codeScanning.severity.medium.toString()]} twoColumns={true} />
           <TableRow items={['Low', summary.codeScanning.severity.low.toString()]} twoColumns={true} />
         </View>
+      </View>
+    </Page>
+
+    {/* New page for Repository Breakdown */}
+    <Page size="A4" style={styles.page}>
+      {/* Code Scanning Section - Part 2 */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 10 }]}>Repository Breakdown</Text>
+        <RepoBreakdownTable data={summary.codeScanning.byRepository} />
 
         {showAllAlerts && alerts.codeScanning.map((alert, index) => (
           <View key={index} style={styles.alertItem}>
@@ -229,6 +179,9 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartIma
             <TableRow key={index} items={[type, count.toString()]} twoColumns={true} />
           ))}
         </View>
+
+        <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 10 }]}>Repository Breakdown</Text>
+        <RepoBreakdownTable data={summary.secretScanning.byRepository} showSeverity={false} />
 
         {showAllAlerts && alerts.secretScanning.map((alert, index) => (
           <View key={index} style={styles.alertItem}>
@@ -255,6 +208,9 @@ const SecurityReport = ({ organization, alerts, summary, showAllAlerts, chartIma
           <TableRow items={['Medium', summary.dependabot.severity.medium.toString()]} twoColumns={true} />
           <TableRow items={['Low', summary.dependabot.severity.low.toString()]} twoColumns={true} />
         </View>
+
+        <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 10 }]}>Repository Breakdown</Text>
+        <RepoBreakdownTable data={summary.dependabot.byRepository} />
 
         {showAllAlerts && alerts.dependabot.map((alert, index) => (
           <View key={index} style={styles.alertItem}>
